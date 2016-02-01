@@ -5,6 +5,8 @@ console.log("Getting the average class size...");
 
 if (typeof firstArg === 'number') {
   Average.start(firstArg);
+} else if (firstArg === "--notes") {
+  Average.onlyLogNotes();
 } else {
   Average.start();
 }

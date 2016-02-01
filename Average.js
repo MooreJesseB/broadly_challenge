@@ -29,22 +29,33 @@ Average.prototype.start = function(minAge) {
         var data = JSON.parse(body);
 
         if (data.classes) { 
-          async.map(data.classes, function(aClass, callback) {
-            request(aClass, function(error, response, body) {
-              var data = JSON.parse(body);
-              self.processClass(data, function(studentIds) {
-                callback(null, studentIds.length);
+
+          if (self.doLogNotes) {
+            data.classes.forEach(function(aClass) {
+              request(aClass, function(error, reponse, body) {
+                var data = JSON.parse(body);
+                self.processClass(data);
               });
             });
-          }, function(err, results) {
 
-            console.log("\nAverage class size: ", Math.round(results.reduce(function(prev, current) {
-              return prev + current;
-            }) / data.classes.length), "students\n");
+          } else {
+            async.map(data.classes, function(aClass, callback) {
+              request(aClass, function(error, response, body) {
+                var data = JSON.parse(body);
+                self.processClass(data, function(studentIds) {
+                  callback(null, studentIds.length);
+                });
+              });
+            }, function(err, results) {
 
-            console.log("End Time", new Date());
-            console.log("Elapsed Time", new Date().getTime() - start.getTime(), "miliseconds");
-          });
+              console.log("\nAverage class size: ", Math.round(results.reduce(function(prev, current) {
+                return prev + current;
+              }) / data.classes.length), "students\n");
+
+              console.log("End Time", new Date());
+              console.log("Elapsed Time", new Date().getTime() - start.getTime(), "miliseconds");
+            });
+          }
         }
       });
     }
@@ -53,9 +64,17 @@ Average.prototype.start = function(minAge) {
 
 Average.prototype.processClass = function(data, callback) {
   var self = this;
+
+  this.doLogNotes && this.logNote(data);
+
   if (data.next) {
     request(data.next, function(error, response, body) {
       var data = JSON.parse(body);
+
+      if (self.doLogNotes) {
+        self.logNote(data);
+        self.processClass(data);
+      }
 
       self.processClass(data, function(students) {
         callback(data.students.filter(function(student) {
@@ -69,12 +88,20 @@ Average.prototype.processClass = function(data, callback) {
     });
 
   } else {
+    if (this.doLogNotes) {
+      return;
+    }
+
     callback(data.students.filter(function(student) {
       return student.age >= self.minAge;
     }).map(function(student) {
       return student.id;
-    }));
+    }));  
   }
+};
+
+Average.prototype.logNote = function(data) {
+  console.log("Note:", data.note);
 };
 
 Average.prototype.onlyLogNotes = function() {
