@@ -37,7 +37,8 @@ Average.prototype.start = function(minAge) {
               });
             });
           }, function(err, results) {
-            console.log("\nAverage class size: ", parseInt(results.reduce(function(prev, current) {
+
+            console.log("\nAverage class size: ", Math.round(results.reduce(function(prev, current) {
               return prev + current;
             }) / data.classes.length), "students\n");
 
@@ -57,17 +58,14 @@ Average.prototype.processClass = function(data, callback) {
       var data = JSON.parse(body);
 
       self.processClass(data, function(students) {
-
         callback(data.students.filter(function(student) {
           return student.age >= self.minAge;
         }).map(function(student) {
-          if (students.indexOf(student.id) !== -1) {
-            return student.id;
-          }
+          return student.id;
+        }).filter(function(student) {
+          return students.indexOf(student.id) === -1;
         }).concat(students));
-
       });
-
     });
 
   } else {
